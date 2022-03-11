@@ -20,7 +20,7 @@
 
 // clang-format off
 ////////////////////////////////////////////////////////////////////////////////
-static const std::array<std::uint8_t, 1536> font{
+static constexpr std::array<std::uint8_t, 1536> font{
     0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
     0x00u, 0x3eu, 0x45u, 0x51u, 0x45u, 0x3eu,
     0x00u, 0x3eu, 0x7bu, 0x6fu, 0x7bu, 0x3eu,
