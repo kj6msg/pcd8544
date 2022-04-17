@@ -343,7 +343,7 @@ void PCD8544::set_contrast(int level)
 ////////////////////////////////////////////////////////////////////////////////
 void PCD8544::clear()
 {
-    set_cursor(0, 0);
+    set_ram_addr(0, 0);
 
     for(int n{0}; n != screen_width * rows; ++n)
         send(WriteType::data, 0U);

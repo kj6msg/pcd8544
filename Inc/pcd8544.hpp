@@ -22,6 +22,7 @@ class PCD8544
     static constexpr int screen_width{84};
     static constexpr int screen_height{48};
     static constexpr int banks{6};
+    static constexpr int pixels_per_bank{screen_height / banks};
 
     static constexpr int font_width{6};
     static constexpr int font_height{8};
