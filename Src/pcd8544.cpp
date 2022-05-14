@@ -1,6 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 // PCD8544 Library
-// Copyright (C) 2022 Ryan Clarke <kj6msg@icloud.com>
+// Copyright 2022 Ryan Clarke
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "pcd8544.hpp"
@@ -11,6 +23,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <iterator>
 #include <string_view>
 
 
@@ -20,7 +33,8 @@
 
 // clang-format off
 ////////////////////////////////////////////////////////////////////////////////
-static constexpr std::array<std::uint8_t, 1536> font{
+static constexpr std::array<std::uint8_t, 1536> font
+{
     0x00u, 0x00u, 0x00u, 0x00u, 0x00u, 0x00u,
     0x00u, 0x3eu, 0x45u, 0x51u, 0x45u, 0x3eu,
     0x00u, 0x3eu, 0x7bu, 0x6fu, 0x7bu, 0x3eu,
@@ -304,7 +318,8 @@ PCD8544::PCD8544(SPI_TypeDef* spi_port, GPIO_TypeDef* sce_port,
     send(WriteType::command, SET_VOP | static_cast<std::uint8_t>(m_vop));
     send(WriteType::command, TEMP_CTRL | TEMP0);
 
-    send(WriteType::command, SET_BIAS | static_cast<std::uint8_t>(bias));
+    constexpr uint8_t bias{3};   // 1:48
+    send(WriteType::command, SET_BIAS | bias);
 
     send(WriteType::command, FUNC_SET | BASIC);
     send(WriteType::command, DISP_CTRL | NORMAL);
@@ -326,13 +341,12 @@ PCD8544::~PCD8544()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::set_contrast(int level)
+void PCD8544::set_contrast(const int level) noexcept
 {
     // datasheet specifies Vop should be less than 8.5V for low temperatures
-    if(level > max_vop)
-        level = max_vop;   // Vop = 3.06V + 0.06V * 90 = 8.46V
+    constexpr int max_vop{90};   // max_vop = 3.06V + 0.06V * 90 = 8.46V
 
-    m_vop = level;
+    m_vop = (level > max_vop) ? max_vop : level;
 
     send(WriteType::command, FUNC_SET | EXTEND);
     send(WriteType::command, SET_VOP | static_cast<std::uint8_t>(m_vop));
@@ -341,17 +355,17 @@ void PCD8544::set_contrast(int level)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::clear()
+void PCD8544::clear() noexcept
 {
     set_ram_addr(0, 0);
 
-    for(int n{0}; n != screen_width * rows; ++n)
+    for(int n{}; n != screen_width * rows; ++n)
         send(WriteType::data, 0U);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::set_cursor(int column, int row)
+void PCD8544::set_cursor(const int column, const int row) noexcept
 {
     m_x_addr = (column % columns) * font_width;
     m_y_addr = row % rows;
@@ -362,27 +376,19 @@ void PCD8544::set_cursor(int column, int row)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::print(char c)
+void PCD8544::print(const char c)
 {
     if((c < ' ') || (c == '\x7F'))
     {
+        // clang-format off
         switch(c)
         {
-        case '\n':
-            set_cursor(0, m_y_addr + 1);
-            break;
-
-        case '\f':
-            clear();
-            break;
-
-        case '\r':
-            set_cursor(0, m_y_addr);
-            break;
-
-        default:
-            break;
+        case '\n': set_cursor(0, m_y_addr + 1); break;
+        case '\f': clear(); break;
+        case '\r': set_cursor(0, m_y_addr); break;
+        default:   break;
         }
+        // clang-format on
     }
     else
     {
@@ -392,7 +398,7 @@ void PCD8544::print(char c)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::print(std::string_view s)
+void PCD8544::print(const std::string_view s)
 {
     for(const auto c : s)
         print(c);
@@ -400,10 +406,10 @@ void PCD8544::print(std::string_view s)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::write(unsigned char c)
+void PCD8544::write(const unsigned char c)
 {
-    auto font_it = std::next(font.begin(), font_width * static_cast<int>(c));
-    std::for_each_n(font_it, font_width,
+    auto it = std::next(font.begin(), font_width * static_cast<int>(c));
+    std::for_each_n(it, font_width,
         [&](const auto f) { send(WriteType::data, f); });
 
     m_x_addr = (m_x_addr + font_width) % screen_width;
@@ -414,7 +420,7 @@ void PCD8544::write(unsigned char c)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::set_ram_addr(int x, int y)
+void PCD8544::set_ram_addr(const int x, const int y) noexcept
 {
     m_x_addr = x % screen_width;
     m_y_addr = y % rows;
@@ -425,7 +431,7 @@ void PCD8544::set_ram_addr(int x, int y)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::set_pixels(std::uint8_t pixels)
+void PCD8544::set_pixels(const std::uint8_t pixels) noexcept
 {
     send(WriteType::data, pixels);
 
@@ -438,7 +444,7 @@ void PCD8544::set_pixels(std::uint8_t pixels)
 
 //////////////////////////////////////////////////////////////////////////////..
 void PCD8544::draw_bitmap(
-    const std::array<std::uint8_t, screen_width * banks>& bmp)
+    const std::array<std::uint8_t, screen_width * banks>& bmp) noexcept
 {
     set_ram_addr(0, 0);
 
@@ -452,7 +458,7 @@ void PCD8544::draw_bitmap(
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-void PCD8544::send(WriteType type, std::uint8_t data)
+void PCD8544::send(const WriteType type, const std::uint8_t data) const noexcept
 {
     if(type == WriteType::command)
         LL_GPIO_ResetOutputPin(m_dc_port, m_dc_pin);
@@ -462,9 +468,13 @@ void PCD8544::send(WriteType type, std::uint8_t data)
     LL_GPIO_ResetOutputPin(m_sce_port, m_sce_pin);
 
     LL_SPI_TransmitData8(m_spi_port, data);
-    while(!LL_SPI_IsActiveFlag_TXE(m_spi_port)) {}
+    while(!LL_SPI_IsActiveFlag_TXE(m_spi_port))
+    {
+    }
 
-    while(LL_SPI_IsActiveFlag_BSY(m_spi_port)) {}
+    while(LL_SPI_IsActiveFlag_BSY(m_spi_port))
+    {
+    }
 
     LL_GPIO_SetOutputPin(m_sce_port, m_sce_pin);
 }

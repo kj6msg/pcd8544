@@ -1,6 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 // PCD8544 Library
-// Copyright (C) 2022 Ryan Clarke <kj6msg@icloud.com>
+// Copyright 2022 Ryan Clarke
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PCD8544_HPP
@@ -31,15 +43,6 @@ class PCD8544
     static constexpr int rows{screen_height / font_height};
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief On/off state of pixel.
-    ////////////////////////////////////////////////////////////////////////////
-    enum class PixelState
-    {
-        off,
-        on
-    };
-
-    ////////////////////////////////////////////////////////////////////////////
     /// @brief Constructor.
     /// @param spi_port SPI port
     /// @param sce_port chip enable port
@@ -53,17 +56,10 @@ class PCD8544
         GPIO_TypeDef* rst_port, unsigned int rst_pin, GPIO_TypeDef* dc_port,
         unsigned int dc_pin);
 
-    ////////////////////////////////////////////////////////////////////////////
-    /// Deleted copy constructors.
-    ////////////////////////////////////////////////////////////////////////////
-    PCD8544(const PCD8544&) = delete;
+    PCD8544(const PCD8544&)            = delete;
     PCD8544& operator=(const PCD8544&) = delete;
-
-    ////////////////////////////////////////////////////////////////////////////
-    /// Deleted move constructors.
-    ////////////////////////////////////////////////////////////////////////////
-    PCD8544(PCD8544&&) = delete;
-    PCD8544&& operator=(PCD8544&&) = delete;
+    PCD8544(PCD8544&&)                 = delete;
+    PCD8544&& operator=(PCD8544&&)     = delete;
 
     ////////////////////////////////////////////////////////////////////////////
     /// @brief Destructor.
@@ -71,59 +67,60 @@ class PCD8544
     ~PCD8544();
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Sets display contrast level.
+    /// @brief Set display contrast level.
     /// @param level contrast level [49-90]
     ////////////////////////////////////////////////////////////////////////////
-    void set_contrast(int level);
+    void set_contrast(int level) noexcept;
 
     ////////////////////////////////////////////////////////////////////////////
     /// @brief Clears the display.
     ////////////////////////////////////////////////////////////////////////////
-    void clear();
+    void clear() noexcept;
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Sets the cursor position.
+    /// @brief Set the cursor position.
     /// @param column horizontal coordinate [0-13]
     /// @param row    vertical coordinate [0-5]
     ////////////////////////////////////////////////////////////////////////////
-    void set_cursor(int column, int row);
+    void set_cursor(int column, int row) noexcept;
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Prints a character. Processes NL, FF, and CR.
+    /// @brief Print a character. Processes NL, FF, and CR.
     /// @param c character
     ////////////////////////////////////////////////////////////////////////////
     void print(char c);
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Prints a string. Processes NL, FF, and CR.
+    /// @brief Print a string. Processes NL, FF, and CR.
     /// @param s string
     ////////////////////////////////////////////////////////////////////////////
     void print(std::string_view s);
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Prints a character. No processing of control codes.
+    /// @brief Print a character. No processing of control codes.
     /// @param c character
     ////////////////////////////////////////////////////////////////////////////
     void write(unsigned char c);
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Sets RAM address.
+    /// @brief Set RAM address.
     /// @param x horizontal coordinate [0-83]
     /// @param y vertical coordinate [0-5]
     ////////////////////////////////////////////////////////////////////////////
-    void set_ram_addr(int x, int y);
+    void set_ram_addr(int x, int y) noexcept;
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Sets a column of eight pixels at current RAM address.
+    /// @brief Set a column of eight pixels at current RAM address.
     /// @param pixels pixel data
     ////////////////////////////////////////////////////////////////////////////
-    void set_pixels(std::uint8_t pixels);
+    void set_pixels(std::uint8_t pixels) noexcept;
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Draws a bitmap image.
+    /// @brief Draw a bitmap image.
     /// @param bmp bitmap
     ////////////////////////////////////////////////////////////////////////////
-    void draw_bitmap(const std::array<std::uint8_t, screen_width * banks>& bmp);
+    void draw_bitmap(
+        const std::array<std::uint8_t, screen_width * banks>& bmp) noexcept;
 
   private:
     ////////////////////////////////////////////////////////////////////////////
@@ -136,11 +133,11 @@ class PCD8544
     };
 
     ////////////////////////////////////////////////////////////////////////////
-    /// @brief Sends a byte to the display.
+    /// @brief Send a byte to the display.
     /// @param type command or data
     /// @param data byte to send
     ////////////////////////////////////////////////////////////////////////////
-    void send(WriteType type, std::uint8_t data);
+    void send(WriteType type, std::uint8_t data) const noexcept;
 
     SPI_TypeDef* m_spi_port{nullptr};
 
@@ -153,9 +150,7 @@ class PCD8544
     GPIO_TypeDef* m_dc_port{nullptr};
     unsigned int m_dc_pin{0};
 
-    static constexpr int bias{3};       // 1:48
-    static constexpr int max_vop{90};   // 8.46V
-    int m_vop{69};                      // 7.2V
+    int m_vop{69};   // m_vop = 3.06V + 0.06V * 69 = 7.2V
     int m_x_addr{0};
     int m_y_addr{0};
 
